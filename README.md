@@ -10,7 +10,9 @@ To use, run `download_subreddit.py`
 
 ### options
 `-s`, `--start` specify the time to start searching in a `mm/dd/yy` format.  Defaults to `01/01/00`
+
 `-e`, `--end`  specify the time to stop searching in a `mm/dd/yy` format.  Defaults to current date
+
 `-r`, `--reddit` specify the subreddit to search, e.g. `gabe_k`.  Defaults to `all`
 
 ## License
