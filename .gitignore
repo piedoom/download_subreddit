@@ -1,0 +1,2 @@
+# make sure none of the output files are saved
+*.txt
