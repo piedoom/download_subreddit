@@ -1,104 +1,88 @@
 from BeautifulSoup import BeautifulSoup
 import requests
 import time
-from datetime import datetime
-import sys
-from optparse import OptionParser
 
-# set console options available in the 'options' instance
-parser = OptionParser()
-parser.add_option("-s", "--start", dest="startdate", default="01/01/00", help="When to begin fetching posts, in a date formatted like 'MM/DD/YY', e.g. '02/24/14'")
-parser.add_option("-e", "--end", dest="enddate", default=time.strftime("%m/%d/%y"), help="When to stop fetching posts, either in a date formatted like 'MM/DD/YY', e.g. '02/24/14'")
-parser.add_option("-r", "--reddit", dest="subreddit", default="all", help="Simply the subreddit name, without the reddit url or /r/.  Defaults to all")
-(options, args) = parser.parse_args()
 
+all_submissions = []
 TOTAL_SUBMISSIONS = 1000 
 POSTS_PER_PAGE = 25
 TOTAL_PAGES = TOTAL_SUBMISSIONS / POSTS_PER_PAGE
-BASE_REDDIT_URL = "http://reddit.com/r/" + options.subreddit + "/new/"
-BASE_SEARCH_URL = "http://reddit.com/r/" + options.subreddit + "/search/"
+BASE_REDDIT_URL = "http://reddit.com/r/strawmen/hot/"
 REDDIT_RATE_LIMIT_SECS = 2
-USER_AGENT = {'User-agent': 'Mozilla/5.0'}
-all_submissions = []
-
-print BASE_REDDIT_URL
 
 # get_page lets you get a specific page in the subreddit's /new/ category
 # if you know the count and the after id
 def get_page(count, after):
     payload = {'count' : count, 'after' : after}
-    return requests.get(BASE_REDDIT_URL, params = payload)
+    r = requests.get(BASE_REDDIT_URL, params = payload)
+    return r
 
 # get_first_page gets the first page in the subreddit /new/ category
 def get_first_page():
-    return requests.get(BASE_REDDIT_URL, headers = USER_AGENT)
+    user_agent = {'User-agent': 'Mozilla/5.0'}
+    r = requests.get(BASE_REDDIT_URL, headers = user_agent)
+    return r
 
 # get_page_from_raw_url gives you a page if you know the raw url of the
 # page you're trying to get. Useful if you are getting the url from
 # some anchor tag in the html itself.
 def get_page_from_raw_url(url):
-    return requests.get(url, headers = USER_AGENT)
+    user_agent = {'User-agent': 'Mozilla/5.0'}
+    r = requests.get(url, headers = user_agent)
+    return r
+
        
 # get_submissions_from_soup returns a list of submissions that 
 # have i.imgur.com in them. This is because this script is only
 # useful to me atm. However, I will make this more general in 
 # the future.
 def get_submissions_from_soup(soup_data):
-    
-    r = []
+    submissions = set() 
     for a in soup_data.findAll('a', href=True):
-        if 'imgur.com' in a['href']:
-            r.append(str(a['href']))
-    return r
+        if 'http://i.imgur.com' in str(a['href']):
+            submissions.add(str(a['href']))
+    return submissions
 
 # get_next_url_from_soup gets the url of the page after the 
 # current one.
 def get_next_url_from_soup(soup_data):
     for a in soup_data.findAll('a', href=True):
-        if 'next' in str(a):
+        if 'next' in str(a.contents[0]):
             return str(a['href'])
 
 def get_search_from_to(f, t):
+    BASE_SEARCH_URL = "https://www.reddit.com/r/strawmen/search"
     payload = {'sort':'new',
-               #TODO: fix the serch times
                'q' : 'timestamp:{}..{}'.format(f,t),
                'restrict_sr': 'on',
                'syntax': 'cloudsearch'}
-    return requests.get(BASE_SEARCH_URL, params=payload, headers=USER_AGENT)
-    
-# convert the date taken from the options into epoch time    
-def convert_date(date):
-    return int(time.mktime(time.strptime(date, "%m/%d/%y")))
+    user_agent = {'User-agent': 'Mozilla/5.0'}
+    r = requests.get(BASE_SEARCH_URL, params=payload, headers=user_agent)
+    return r
     
 
 def search_main():
     submission_set = set()
     STEP = 8 * 60 * 60
-    START = convert_date(options.startdate)
-    END = convert_date(options.enddate)
-    
-    # print status to console 
-    # for count in range(START, END, STEP):
-    
-    # innacurate information?
-    # print "%s minutes left\n" % str((((END - count)/STEP) * 3) / 60)
-    # a giant HTML page
-    search_result = get_search_from_to(START, END).text
-    soup = BeautifulSoup(search_result)
-    # let beautiful soup parse out the good imgur links
-    submissions = get_submissions_from_soup(soup)
-    print submissions
-    all_submissions.append(submissions)
-    time.sleep(REDDIT_RATE_LIMIT_SECS)
-        
+    START = 1449985099
+    END = 1449986099
+    for count in range(START, END, STEP):
+        print "have this many more: " + str(END - count)
+        print "% done: " + str((count) / (END))
+        print "time left: " + str((((END - count)/STEP) * 3) / 60) + " minutes"
+        search_result = get_search_from_to(count, count + STEP).text
+        soup = BeautifulSoup(search_result)
+        submission_set = submission_set | get_submissions_from_soup(soup)
+        time.sleep(2)
     with open('search_submissions.txt', 'w') as f:
             for submission in all_submissions:
                 f.write(str(submission) + "\n")
 def main():
+
+    
     first_page = get_first_page().text
     soup = BeautifulSoup(first_page)
     submissions = get_submissions_from_soup(soup)
-    
     next_url = get_next_url_from_soup(soup)
     time.sleep(REDDIT_RATE_LIMIT_SECS)
     count = POSTS_PER_PAGE

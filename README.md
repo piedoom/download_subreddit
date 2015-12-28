@@ -1,5 +1,12 @@
-Work in progress. Not functional currently.
+## Overview
+A currently non-functional work in progress.
 
-Gives the link to every submission in a subreddit.
+The aim of this project is to give a link to every submission in a subreddit.
 
-MIT license. Check out LICENSE.md for more info.
+## Setting Up
+Start by installing the dependencies by running the command `pip install -r requirements` in the root folder.  
+Note that you must be running Python 2.7.9 and pip.  Running versions lower than 2.7.9 will result in warnings.
+
+
+## License
+Licensed under MIT. Please check out LICENSE for more info.
